@@ -4,7 +4,7 @@
 
 .states {
 	fill: #e5e5e5;
-	stroke: #fff;
+	stroke: #000;
 	stroke-width:2px;
 }
 
@@ -28,9 +28,11 @@ var projection = d3.geo.albersUsa()
 var path = d3.geo.path()
 	.projection(projection);
 
-d3.json('scripts/world-110m2.json', function(error, us) {
+d3.json('scripts/world-110m2.json', function(error, world) {
+	console.log(world);
 	svg.append('path')
-		.attr('class', 'countries')
+		.datum(topojson.feature(us, us.objects.state))
+		.attr('class', 'states')
 		.attr('d', path);
 });
 </script>
