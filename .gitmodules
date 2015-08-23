@@ -1,6 +1,6 @@
 [submodule "scripts/d3"]
 	path = scripts/d3
-	url = https://www.github.com:mbostock/d3.git
+	url = https://github.com/mbostock/d3.git
 [submodule "scripts/topojson"]
 	path = scripts/topojson
-	url = https://www.github.com:mbostock/topojson.git
+	url = https://github.com/mbostock/topojson.git
