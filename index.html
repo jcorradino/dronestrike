@@ -2,7 +2,7 @@
 <meta http-equiv="content-type" content="text/html; charset=utf-8">
 <style>
 
-.states {
+.countries {
 	fill: #e5e5e5;
 	stroke: #000;
 	stroke-width:2px;
@@ -29,10 +29,9 @@ var path = d3.geo.path()
 	.projection(projection);
 
 d3.json('scripts/world-110m2.json', function(error, world) {
-	console.log(world);
 	svg.append('path')
-		.datum(topojson.feature(us, us.objects.state))
-		.attr('class', 'states')
+		.datum(topojson.feature(world, world.objects.countries))
+		.attr('class', 'countries')
 		.attr('d', path);
 });
 </script>
