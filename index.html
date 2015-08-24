@@ -1,6 +1,11 @@
+
 <!DOCTYPE html>
 <meta http-equiv="content-type" content="text/html; charset=utf-8">
 <style>
+
+* {
+	margin: 0px;
+}
 
 .land {
 	fill: #222;
@@ -14,22 +19,22 @@
 
 </style>
 <body>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
 <script src="scripts/d3/d3.min.js"></script>
 <script src="scripts/topojson/topojson.js"></script>
 <script>
 
-var width = 960,
-		height = 960;
+var width = 660,
+		height = 740;
 
 var svg = d3.select('body').append('svg')
 		.attr('width', width)
 		.attr('height', height);
 
 var projection = d3.geo.mercator()
-		.scale((width + 1) / 2 / Math.PI)
-		.translate([width / 2, height / 2])
-		.precision(.1);
-
+		.scale(1000)
+		.center([68, 25])
+				
 var path = d3.geo.path()
 		.projection(projection);
 
@@ -44,6 +49,22 @@ d3.json('scripts/world-110m2.json', function(error, world) {
 				.datum(topojson.mesh(world, world.objects.countries, function(a, b) { return a !== b; }))
 				.attr("class", "boundary")
 				.attr("d", path);
+
+		$.ajax({
+				url: 'http://api.dronestre.am/data',
+				dataType: 'jsonp'
+		}).done(function(droneStrikes){
+				$(droneStrikes.strike).each(function(){
+					var coordinates = projection([this.lon, this.lat]);
+					var collateralDamage = 
+					svg.append('circle')
+							.attr("cx", coordinates[0])
+							.attr('cy', coordinates[1])
+							.attr('r', this.deaths)
+							.style("fill", "red")
+							.style("opacity", .3)
+				});
+		})
 });
 </script>
 </body>
