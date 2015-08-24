@@ -17,6 +17,28 @@
 	stroke-width: .5px;
 }
 
+.deaths {
+	fill: red;
+	opacity: .3;
+}
+
+body {
+	overflow: hidden;
+}
+
+.navigation {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: white;
+  border: 2px solid black;
+  width: 250px;
+  padding: 10px;
+}
+.navigation a {
+	display: inline-block;
+}
+
 </style>
 <body>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
@@ -24,48 +46,98 @@
 <script src="scripts/topojson/topojson.js"></script>
 <script>
 
-var width = 660,
-		height = 740;
+var width = $(window).width(),
+		height = $(window).height();
 
 var svg = d3.select('body').append('svg')
-		.attr('width', width)
-		.attr('height', height);
-
-var projection = d3.geo.mercator()
-		.scale(1000)
-		.center([68, 25])
+		.attr('width', width+"px")
+		.attr('height', height+"px");
+		
+var projection = d3.geo.equirectangular()
+		.scale((width/640)*400)
+		.translate([width/2, height/2])
+		.center([55, 20])
 				
 var path = d3.geo.path()
 		.projection(projection);
 
 d3.json('scripts/world-110m2.json', function(error, world) {
 		if (error) throw error;
+		
+		// Insert landmass
 		svg.insert("path", ".graticule")
 				.datum(topojson.feature(world, world.objects.land))
 				.attr("class", "land")
 				.attr("d", path);
-				
+
+		// Insert borders
 		svg.insert("path", ".graticule")
 				.datum(topojson.mesh(world, world.objects.countries, function(a, b) { return a !== b; }))
 				.attr("class", "boundary")
 				.attr("d", path);
 
+		// Insert strike information
 		$.ajax({
 				url: 'http://api.dronestre.am/data',
 				dataType: 'jsonp'
 		}).done(function(droneStrikes){
 				$(droneStrikes.strike).each(function(){
-					var coordinates = projection([this.lon, this.lat]);
-					var collateralDamage = 
-					svg.append('circle')
-							.attr("cx", coordinates[0])
-							.attr('cy', coordinates[1])
-							.attr('r', this.deaths)
-							.style("fill", "red")
-							.style("opacity", .3)
+						var deaths = parseInt(this.deaths_max);
+						var classes = buildCasualtyClasses(this);
+						if (!isNaN(deaths)) {
+								var coordinates = projection([this.lon, this.lat]);
+								svg.append('circle')
+										.attr("cx", coordinates[0])
+										.attr('cy', coordinates[1])
+										.attr('r', deaths)
+										.attr("class", buildCasualtyClasses(this))
+						}
 				});
 		})
 });
+
+// Add specificity to the API information to add the ability to toggle between different views
+function buildCasualtyClasses(strike) {
+	var classes = "deaths";
+	var civs = (strike.civilians.indexOf("-") != -1) ? strike.civilians.split("-")[1] : strike.civilians;
+	var totalDeaths = strike.deaths_max;
+	var children = (strike.children.indexOf("-") != -1) ? strike.children.split("-")[1] : strike.children;
+	if (civs == 0) {
+		classes += " no-civilians";
+	} else if (civs / totalDeaths > .5) {
+		classes += " mostly-civilians";
+	} else if (civs == totalDeaths) {
+		classes += " all-civilians";
+	}
+	if (children > 0) {
+		classes += " children";
+	}
+	return classes;
+}
+$(document).ready(function(){
+	$(".toggle-all-strikes").click(function(){
+		$(".deaths").show();
+	});
+	$(".toggle-no-civilians").click(function(){
+		$(".deaths").hide();
+		$(".no-civilians").show();
+	});
+	$(".toggle-mostly-civilians").click(function(){
+		$(".deaths").hide();
+		$(".mostly-civilians").show();
+	});
+	$(".toggle-children").click(function(){
+		$(".deaths").hide();
+		$(".children").show();
+	});
+});
 </script>
+<div class="navigation">
+	<h2>Map of Drone Strikes</h2>
+	<a href="#" class="toggle-all-strikes">All Strikes</a>
+	<a href="#" class="toggle-no-civilians">Strikes that killed no civilians</a>
+	<a href="#" class="toggle-mostly-civilians">Strikes that killed mostly civilians</a>
+	<a href="#" class="toggle-children">Strikes that killed children</a>
+</div>
 </body>
 </html>
