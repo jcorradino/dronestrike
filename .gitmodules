@@ -4,3 +4,6 @@
 [submodule "scripts/topojson"]
 	path = scripts/topojson
 	url = https://github.com/mbostock/topojson.git
+[submodule "scripts/queue"]
+	path = scripts/queue
+	url = https://github.com/mbostock/queue.git

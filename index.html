@@ -8,22 +8,26 @@
 }
 
 .land {
-	fill: #222;
+	fill: rgb(237, 235, 225);;
+	stroke: rgb(0,0,0);
+	stroke-width: .5px;
 }
 
-.boundary {
-	fill: none;
-	stroke: #fff;
-	stroke-width: .5px;
+.land.Pakistan, .land.Yemen, .land.Somalia {
+	fill: rgb(213, 193, 156);
 }
 
 .deaths {
 	fill: red;
 	opacity: .3;
 }
+.deaths.dot {
+	opacity: 1;
+}
 
 body {
 	overflow: hidden;
+	background-color: rgb(125, 212, 255);
 }
 
 .navigation {
@@ -39,61 +43,206 @@ body {
 	display: inline-block;
 }
 
+.playButton {
+	display: none;
+	position: fixed;
+	cursor: pointer;
+	bottom: 10px;
+	left: 10px;
+	width: 50px;
+	height: 50px;
+}
+.playButton:hover path {
+	opacity: 1;
+}
+
 </style>
 <body>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
 <script src="scripts/d3/d3.min.js"></script>
+<script src="scripts/queue/queue.min.js"></script>
 <script src="scripts/topojson/topojson.js"></script>
 <script>
 
+var strikes = new Array();
+
 var width = $(window).width(),
-		height = $(window).height();
+	height = $(window).height();
 
 var svg = d3.select('body').append('svg')
-		.attr('width', width+"px")
-		.attr('height', height+"px");
-		
+	.attr('width', width+"px")
+	.attr('height', height+"px");
+	
 var projection = d3.geo.equirectangular()
-		.scale((width/640)*400)
-		.translate([width/2, height/2])
-		.center([55, 20])
-				
+	.scale((width/640)*400)
+	.translate([width/2, height/2])
+	.center([55, 20])
+			
 var path = d3.geo.path()
-		.projection(projection);
-
-d3.json('scripts/world-110m2.json', function(error, world) {
-		if (error) throw error;
+	.projection(projection);
+	
+queue()
+	.defer(d3.json, "scripts/world-110m2.json")
+	.defer(d3.tsv, "scripts/world-country-names.tsv")
+	.await(ready);
 		
-		// Insert landmass
-		svg.insert("path", ".graticule")
-				.datum(topojson.feature(world, world.objects.land))
-				.attr("class", "land")
-				.attr("d", path);
+function ready(error, world, names) {
+	var land = topojson.feature(world, world.objects.land),
+		countries = topojson.feature(world, world.objects.countries).features,
+		borders = topojson.mesh(world, world.objects.countries, function(a, b) { return a !== b; }),
+		i = -1,
+		n = countries.length;
 
-		// Insert borders
-		svg.insert("path", ".graticule")
-				.datum(topojson.mesh(world, world.objects.countries, function(a, b) { return a !== b; }))
-				.attr("class", "boundary")
-				.attr("d", path);
+	countries = countries.filter(function(d) {
+		return names.some(function(n) {
+			if (d.id == n.id) return d.name = n.name;
+		});
+	}).sort(function(a, b) {
+		return a.name.localeCompare(b.name);
+	});
 
-		// Insert strike information
-		$.ajax({
-				url: 'http://api.dronestre.am/data',
-				dataType: 'jsonp'
-		}).done(function(droneStrikes){
-				$(droneStrikes.strike).each(function(){
-						var deaths = parseInt(this.deaths_max);
-						var classes = buildCasualtyClasses(this);
-						if (!isNaN(deaths)) {
-								var coordinates = projection([this.lon, this.lat]);
-								svg.append('circle')
-										.attr("cx", coordinates[0])
-										.attr('cy', coordinates[1])
-										.attr('r', deaths)
-										.attr("class", buildCasualtyClasses(this))
-						}
-				});
+	$(countries).each(function(country){
+		svg.insert('path', ".graticule")
+			.datum(this)
+			.attr("class", "land "+ this.name)
+			.attr('d', path);
+	});
+	
+	$.ajax({
+		url: 'http://api.dronestre.am/data',
+		dataType: 'jsonp'
+	}).done(function(droneStrikes){
+		$(droneStrikes.strike).each(function(){
+			var classes = buildCasualtyClasses(this);
+			var deaths = parseInt(this.deaths_max);
+			if (!isNaN(deaths)) {
+				var coordinates = projection([this.lon, this.lat]);
+				var ele = svg.append('circle')
+					.attr("cx", coordinates[0])
+					.attr('cy', coordinates[1])
+					.attr('r', 1)
+					.attr("class", buildCasualtyClasses(this))
+					.attr("style", "display: none");
+				strikes.push({"element": ele[0], "data": this});
+			}
+		});
+		$(".playButton").show();
+	});
+	
+	svg.append("line").attr("id", "h_crosshair") // horizontal cross hair
+		.attr("x1", 0)
+		.attr("y1", 0)
+		.attr("x2", 0)
+		.attr("y2", 0)
+		.style("stroke", "red")
+		.style("stroke-width", "1px")
+		.style("opacity", .3);
+
+	svg.append("line").attr("id", "v_crosshair") // vertical cross hair
+		.attr("x1", 0)
+		.attr("y1", 0)
+		.attr("x2", 0)
+		.attr("y2", 0)
+		.style("stroke", "red")
+		.style("stroke-width", "1px")
+		.style("opacity", .3);
+		
+	var startingData = {"militants":32,"civilians":6,"children":4,"total":42};
+		
+	svg.append("rect")
+		.attr('class', 'militants')
+		.attr("x", 0)
+		.attr("y", 0)
+		.attr("height", 15)
+		.attr("width", function(){
+			var w = (startingData.militants / startingData.total)*100;
+			if (isNaN(w)) {
+				return "0";
+			} else {
+				return w+"%";	
+			}
 		})
+		.attr("fill", "green");
+
+	svg.append("rect")
+		.attr('class', 'civilian')
+		.attr("x", function(){
+			var w = (startingData.militants / startingData.total)*100;
+			if (isNaN(w)) {
+				return "0";
+			} else {
+				return w+"%";	
+			}
+		})
+		.attr("y", 0)
+		.attr("height", 15)
+		.attr("width", function(){
+			var w = (startingData.civilians / startingData.total)*100;
+			if (isNaN(w)) {
+				return "0";
+			} else {
+				return w+"%";	
+			}
+		})
+		.attr("fill", "red");
+
+	svg.append("rect")
+		.attr('class', 'children')
+		.attr("x", function(){
+			var w = (startingData.militants / startingData.total)*100 + (startingData.civilians / startingData.total)*100;
+			if (isNaN(w)) {
+				return "0";
+			} else {
+				return w+"%";	
+			}
+		})
+		.attr("y", 0)
+		.attr("height", 15)
+		.attr("width", function(){
+			var w = (startingData.children / startingData.total)*100;
+			if (isNaN(w)) {
+				return "0";
+			} else {
+				return w+"%";	
+			}
+		})
+		.attr("fill", "skyblue");
+}
+
+$(document).ready(function() {
+	var i = 0;
+	function animateStrikes(){
+		if (strikes.length >= i) {
+			var deaths = parseInt(strikes[i].data.deaths_max);
+			addCrossHair($(strikes[i].element).attr("cx"), $(strikes[i].element).attr("cy"), strikes[i].data);
+			$(strikes[i].element).show()
+			.animate({x: deaths},{
+				duration: 150,
+				step: function(now) {
+					$(this).attr("r", deaths*2);
+				}, 
+				complete: function(){
+					$(this).animate({x:1}, {
+						duration: 300, 
+						step: function(now) {
+							$(this).attr("r", now);
+						},
+						complete: function() {
+							$(this).attr("r", 2);
+							i++;
+							animateStrikes();
+						}
+					});
+				}
+			});
+		} else {
+			addCrossHair(0,0, null);
+		}
+	};
+	$(".playButton").on('click', function() {
+		$(".playButton").hide();
+		animateStrikes();
+	});
 });
 
 // Add specificity to the API information to add the ability to toggle between different views
@@ -114,6 +263,25 @@ function buildCasualtyClasses(strike) {
 	}
 	return classes;
 }
+
+function addCrossHair(xCoord, yCoord, data) {
+	// Update horizontal cross hair
+	d3.select("#h_crosshair")
+		.attr("x1", 0)
+		.attr("y1", yCoord)
+		.attr("x2", width)
+		.attr("y2", yCoord)
+		.style("display", "block");
+	
+	// Update vertical cross hair
+	d3.select("#v_crosshair")
+		.attr("x1", xCoord)
+		.attr("y1", 0)
+		.attr("x2", xCoord)
+		.attr("y2", height)
+		.style("display", "block");
+}
+
 $(document).ready(function(){
 	$(".toggle-all-strikes").click(function(){
 		$(".deaths").show();
@@ -139,5 +307,17 @@ $(document).ready(function(){
 	<a href="#" class="toggle-mostly-civilians">Strikes that killed mostly civilians</a>
 	<a href="#" class="toggle-children">Strikes that killed children</a>
 </div>
+<svg version="1.1" class="playButton" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 width="1024px" height="1024px" viewBox="0 0 1024 1024" enable-background="new 0 0 1024 1024" xml:space="preserve">
+	<path opacity="0.75" fill="#4789C8" enable-background="new    " d="M512.384,78.663c-239.357,0-434.1,194.743-434.1,434.1
+		s194.743,434.101,434.1,434.101c239.356,0,434.101-194.743,434.101-434.101C946.483,273.405,751.74,78.663,512.384,78.663z"/>
+	<path fill="#FFFFFF" d="M512.384,1006.738c-272.38,0-493.976-221.597-493.976-493.977S240.004,18.787,512.384,18.787
+		s493.977,221.596,493.977,493.976S784.764,1006.738,512.384,1006.738z M512.384,78.663c-239.357,0-434.1,194.743-434.1,434.1
+		s194.743,434.101,434.1,434.101c239.356,0,434.101-194.743,434.101-434.101C946.483,273.405,751.74,78.663,512.384,78.663z"/>
+	<g>
+		<polygon fill="#FFFFFF" points="358.572,782.203 358.572,243.321 762.733,512.763 	"/>
+	</g>
+</svg>
+
 </body>
 </html>
