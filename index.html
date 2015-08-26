@@ -19,7 +19,6 @@
 
 .deaths {
 	fill: red;
-	opacity: .3;
 }
 .deaths.dot {
 	opacity: 1;
@@ -54,6 +53,15 @@ body {
 }
 .playButton:hover path {
 	opacity: 1;
+}
+.civilians {
+	fill: red;
+}
+.militants {
+	fill: green;
+}
+.children {
+	fill: skyblue;
 }
 
 </style>
@@ -110,20 +118,33 @@ function ready(error, world, names) {
 	
 	$.ajax({
 		url: 'http://api.dronestre.am/data',
-		dataType: 'jsonp'
+		dataType: 'jsonp',
+		cache: true
 	}).done(function(droneStrikes){
 		$(droneStrikes.strike).each(function(){
-			var classes = buildCasualtyClasses(this);
 			var deaths = parseInt(this.deaths_max);
+			var values = {
+				"civilians" : parseInt((this.civilians.indexOf("-") != -1) ? this.civilians.split("-")[1] : (this.civilians === "") ? 0 : this.civilians),
+				"militants" : parseInt(deaths - ((this.civilians.indexOf("-") != -1) ? this.civilians.split("-")[1] : (this.civilians === "") ? 0 : this.civilians)),
+				"children" : parseInt((this.children.indexOf("-") != -1) ? this.children.split("-")[1] : (this.children === "") ? 0 : this.children)
+			};
+			var valueArray = objSort(values);
+			var classes = buildCasualtyClasses(this); // To-do: use values object above to avoid redundancy
 			if (!isNaN(deaths)) {
 				var coordinates = projection([this.lon, this.lat]);
-				var ele = svg.append('circle')
-					.attr("cx", coordinates[0])
-					.attr('cy', coordinates[1])
-					.attr('r', 1)
-					.attr("class", buildCasualtyClasses(this))
-					.attr("style", "display: none");
-				strikes.push({"element": ele[0], "data": this});
+				var g = svg.append('g');
+				for (var i = 0; i < valueArray.length; i++) {
+					if (valueArray[i][1] !== 0 && !isNaN(valueArray[i][1])) {
+						g.append("circle")
+							.attr("cx", coordinates[0])
+							.attr("cy", coordinates[1])
+							.attr("r", valueArray[i][1])
+							.attr("class", buildCasualtyClasses(this) + " " +valueArray[i][0])
+							.style("display", "none")[0]
+					}
+				}
+				
+				strikes.push({"element": g, "data": this, "deaths": values});
 			}
 		});
 		$(".playButton").show();
@@ -148,93 +169,113 @@ function ready(error, world, names) {
 		.style("opacity", .3);
 		
 	var startingData = {"militants":32,"civilians":6,"children":4,"total":42};
+	
+	
 		
-	svg.append("rect")
-		.attr('class', 'militants')
-		.attr("x", 0)
-		.attr("y", 0)
-		.attr("height", 15)
-		.attr("width", function(){
-			var w = (startingData.militants / startingData.total)*100;
-			if (isNaN(w)) {
-				return "0";
-			} else {
-				return w+"%";	
-			}
-		})
-		.attr("fill", "green");
-
-	svg.append("rect")
-		.attr('class', 'civilian')
-		.attr("x", function(){
-			var w = (startingData.militants / startingData.total)*100;
-			if (isNaN(w)) {
-				return "0";
-			} else {
-				return w+"%";	
-			}
-		})
-		.attr("y", 0)
-		.attr("height", 15)
-		.attr("width", function(){
-			var w = (startingData.civilians / startingData.total)*100;
-			if (isNaN(w)) {
-				return "0";
-			} else {
-				return w+"%";	
-			}
-		})
-		.attr("fill", "red");
-
-	svg.append("rect")
-		.attr('class', 'children')
-		.attr("x", function(){
-			var w = (startingData.militants / startingData.total)*100 + (startingData.civilians / startingData.total)*100;
-			if (isNaN(w)) {
-				return "0";
-			} else {
-				return w+"%";	
-			}
-		})
-		.attr("y", 0)
-		.attr("height", 15)
-		.attr("width", function(){
-			var w = (startingData.children / startingData.total)*100;
-			if (isNaN(w)) {
-				return "0";
-			} else {
-				return w+"%";	
-			}
-		})
-		.attr("fill", "skyblue");
+	// svg.append("rect")
+	// 	.attr('class', 'militants')
+	// 	.attr("x", 0)
+	// 	.attr("y", 0)
+	// 	.attr("height", 15)
+	// 	.attr("width", function(){
+	// 		var w = (startingData.militants / startingData.total)*100;
+	// 		if (isNaN(w)) {
+	// 			return "0";
+	// 		} else {
+	// 			return w+"%";	
+	// 		}
+	// 	})
+	// 	.attr("fill", "green");
+	// 
+	// svg.append("rect")
+	// 	.attr('class', 'civilian')
+	// 	.attr("x", function(){
+	// 		var w = (startingData.militants / startingData.total)*100;
+	// 		if (isNaN(w)) {
+	// 			return "0";
+	// 		} else {
+	// 			return w+"%";	
+	// 		}
+	// 	})
+	// 	.attr("y", 0)
+	// 	.attr("height", 15)
+	// 	.attr("width", function(){
+	// 		var w = (startingData.civilians / startingData.total)*100;
+	// 		if (isNaN(w)) {
+	// 			return "0";
+	// 		} else {
+	// 			return w+"%";	
+	// 		}
+	// 	})
+	// 	.attr("fill", "red");
+	// 
+	// svg.append("rect")
+	// 	.attr('class', 'children')
+	// 	.attr("x", function(){
+	// 		var w = (startingData.militants / startingData.total)*100 + (startingData.civilians / startingData.total)*100;
+	// 		if (isNaN(w)) {
+	// 			return "0";
+	// 		} else {
+	// 			return w+"%";	
+	// 		}
+	// 	})
+	// 	.attr("y", 0)
+	// 	.attr("height", 15)
+	// 	.attr("width", function(){
+	// 		var w = (startingData.children / startingData.total)*100;
+	// 		if (isNaN(w)) {
+	// 			return "0";
+	// 		} else {
+	// 			return w+"%";	
+	// 		}
+	// 	})
+	// 	.attr("fill", "skyblue");
 }
 
 $(document).ready(function() {
 	var i = 0;
 	function animateStrikes(){
 		if (strikes.length >= i) {
-			var deaths = parseInt(strikes[i].data.deaths_max);
-			addCrossHair($(strikes[i].element).attr("cx"), $(strikes[i].element).attr("cy"), strikes[i].data);
-			$(strikes[i].element).show()
-			.animate({x: deaths},{
-				duration: 150,
-				step: function(now) {
-					$(this).attr("r", deaths*2);
-				}, 
-				complete: function(){
-					$(this).animate({x:1}, {
-						duration: 300, 
-						step: function(now) {
-							$(this).attr("r", now);
-						},
-						complete: function() {
-							$(this).attr("r", 2);
-							i++;
-							animateStrikes();
-						}
-					});
-				}
-			});
+			var deaths;
+			var total = $(strikes[i].element[0]).children().length - 1;
+			if (total !== -1) {
+				addCrossHair($(strikes[i].element[0]).attr("cx"), $(strikes[i].element[0]).attr("cy"), strikes[i].data);
+				$($(strikes[i].element[0]).children()).each(function(j){
+					if ($(this).is("children")) {
+						deaths = strikes[i].deaths.chilren;
+					} else if ($(this).is(".civilians")) {
+						deaths = strikes[i].deaths.civilians;
+					} else {
+						deaths = strikes[i].deaths.militants;
+					}
+					console.log(i, total, strikes[i].deaths.children, strikes[i].deaths.civilians, strikes[i].deaths.militants);
+					$(this).show()
+						.animate({x: deaths},{
+							duration: 150,
+							step: function(now) {
+								$(this).attr("r", deaths*2);
+							}, 
+							complete: function(){
+								$(this).animate({x:1}, {
+									duration: 500, 
+									step: function(now) {
+										$(this).attr("r", now);
+									},
+									complete: function() {
+										$(this).attr("r", 2);
+										if (total === j) {
+											i++;
+											animateStrikes();
+										}
+									}
+								});
+							}
+						});
+				});
+			} else {
+				i++;
+				animateStrikes();
+			}
 		} else {
 			addCrossHair(0,0, null);
 		}
@@ -258,9 +299,6 @@ function buildCasualtyClasses(strike) {
 	} else if (civs == totalDeaths) {
 		classes += " all-civilians";
 	}
-	if (children > 0) {
-		classes += " children";
-	}
 	return classes;
 }
 
@@ -280,6 +318,15 @@ function addCrossHair(xCoord, yCoord, data) {
 		.attr("x2", xCoord)
 		.attr("y2", height)
 		.style("display", "block");
+}
+
+function objSort(obj) {
+	var sortable = [];
+	var result = {}
+	for (var item in obj) {
+		sortable.push([item, obj[item]])
+	}
+	return sortable.sort(function(a, b) {return b[1] - a[1]})
 }
 
 $(document).ready(function(){
