@@ -113,6 +113,11 @@ $(document).ready(function() {
 					var summary = strike[1].narrative;
 					var top = Math.floor($(strike[0]).attr("cy")) + 15;
 					var left = Math.floor($(strike[0]).attr("cx")) + 15;
+					if (left + 400 > width) {
+						left = width - 425;
+					} else if (left < 0) {
+						left = 25;
+					}
 					$("#strikeInformation .strikeTitle").text(title);
 					$("#strikeInformation .strikeSecondaryTitleline").text(subtitle);
 					$("#strikeInformation .strikeCoords").text(coords);
