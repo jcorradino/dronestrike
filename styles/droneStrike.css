@@ -1,7 +1,9 @@
 @import url(https://fonts.googleapis.com/css?family=Special+Elite);
+@import url(https://fonts.googleapis.com/css?family=Open+Sans);
 
 * {
 	margin: 0px;
+	font-family: 'Open Sans', sans-serif;
 }
 
 .land {
@@ -26,6 +28,27 @@ body {
 	overflow: hidden;
 	background-color: rgb(125, 212, 255);
 }
+.instructions {
+	width: 500px;
+	height: 30px;
+	background: rgba(255,255,255,.8);
+	padding: 15px;
+	border: 2px solid #4789C8;
+	border-radius: 15px;
+	position: fixed;
+	left: calc(50% - 250px);
+	top: calc(45% - 45px);
+	text-align: center;
+	display: none;
+}
+
+.instructions h3 {
+	margin-bottom: 8px;
+}
+
+.instructions p {
+	margin-bottom: 8px;
+}
 
 #strikeInformation {
 	position: fixed;
@@ -37,9 +60,11 @@ body {
 	font-family: 'Special Elite', cursive;
 	display: none;
 }
+#strikeInformation .strikeTitle,  #strikeInformation .strikeSecondaryTitleline, #strikeInformation .strikeCoords {
+	font-family: 'Special Elite', cursive;
+}
 #strikeInformation .strikeSummary {
 	margin-top: 10px;
-	font-family: arial;
 }
 
 .navigation {
@@ -54,6 +79,15 @@ body {
 }
 .navigation a {
 	display: inline-block;
+}
+
+.playLoader {
+	position: fixed;
+	cursor: pointer;
+	bottom: 10px;
+	left: 10px;
+	width: 50px;
+	height: 50px;
 }
 
 .playButton {

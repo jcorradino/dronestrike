@@ -64,6 +64,8 @@ function ready(error, world, names) {
 				strikes.push([strike[0], this]);
 			}
 		});
+		$(".playLoader").hide();
+		$(".instructions").slideDown();
 		$(".playButton").show();
 	});
 	
@@ -138,6 +140,7 @@ $(document).ready(function() {
 	};
 	$(".playButton").on('click', function() {
 		$(".playButton").hide();
+		$(".instructions").slideUp();
 		animateStrikes();
 	});
 });
