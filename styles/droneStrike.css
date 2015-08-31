@@ -20,6 +20,12 @@
 	fill: green;
 	stroke: red;
 }
+.red {
+	color: red;
+}
+.green {
+	color: green;
+}
 .deaths.dot {
 	opacity: 1;
 }
@@ -48,6 +54,21 @@ body {
 
 .instructions p {
 	margin-bottom: 8px;
+}
+
+.key {
+	position: fixed;
+	bottom: 5px;
+	right: 5px;
+	width: 250px;
+	height: 75px;
+	background-color: rgba(255,255,255,.8);
+	border: 2px solid #4789C8;
+	padding: 15px;
+	border-radius: 15px;
+}
+.key p {
+	margin-bottom: 10px;
 }
 
 #strikeInformation {
