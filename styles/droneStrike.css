@@ -1,0 +1,70 @@
+@import url(https://fonts.googleapis.com/css?family=Special+Elite);
+
+* {
+	margin: 0px;
+}
+
+.land {
+	fill: rgb(237, 235, 225);;
+	stroke: rgb(0,0,0);
+	stroke-width: .5px;
+}
+
+.land.Pakistan, .land.Yemen, .land.Somalia {
+	fill: rgb(213, 193, 156);
+}
+
+.deaths {
+	fill: green;
+	stroke: red;
+}
+.deaths.dot {
+	opacity: 1;
+}
+
+body {
+	overflow: hidden;
+	background-color: rgb(125, 212, 255);
+}
+
+#strikeInformation {
+	position: fixed;
+  width: 400px;
+  height: 130px;
+  background: rgba(255,255,255,.7);
+  padding: 12px;
+  border-radius: 12px;
+	font-family: 'Special Elite', cursive;
+	display: none;
+}
+#strikeInformation .strikeSummary {
+	margin-top: 10px;
+	font-family: arial;
+}
+
+.navigation {
+	position: fixed;
+	top: 20px;
+	right: 20px;
+	background: rgba(255,255,255,.8);
+	border: 2px solid black;
+	width: 210px;
+	padding: 10px;
+	text-align: center;
+}
+.navigation a {
+	display: inline-block;
+}
+
+.playButton {
+	display: none;
+	position: fixed;
+	cursor: pointer;
+	bottom: 10px;
+	left: 10px;
+	width: 50px;
+	height: 50px;
+}
+.playButton:hover path {
+	opacity: 1;
+}
